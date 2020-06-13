@@ -20,7 +20,7 @@ class PULSE(torch.nn.Module):
         cache_dir = Path(cache_dir)
         cache_dir.mkdir(parents=True, exist_ok = True)
         if self.verbose: print("Loading Synthesis Network")
-        with open_url("https://drive.google.com/uc?id=1TCViX1YpQyRsklTVYEJwdbmK91vklCo8", cache_dir=cache_dir, verbose=verbose) as f:
+        with open_url("https://drive.google.com/uc?id=1vLsQSD1TPHAPPTnNRwsA24JqRI5CuJbL", cache_dir=cache_dir, verbose=verbose) as f:
             self.synthesis.load_state_dict(torch.load(f))
 
         for param in self.synthesis.parameters():
@@ -34,7 +34,7 @@ class PULSE(torch.nn.Module):
             if self.verbose: print("\tLoading Mapping Network")
             mapping = G_mapping().cuda()
 
-            with open_url("https://drive.google.com/uc?id=14R6iHGf5iuVx3DMNsACAl7eBr7Vdpd0k", cache_dir=cache_dir, verbose=verbose) as f:
+            with open_url("https://drive.google.com/uc?id=1AbKCxqDbm9KAPOE5uiRkO4HzX8kdtbMA", cache_dir=cache_dir, verbose=verbose) as f:
                     mapping.load_state_dict(torch.load(f))
 
             if self.verbose: print("\tRunning Mapping Network")
@@ -120,12 +120,14 @@ class PULSE(torch.nn.Module):
         }
         schedule_func = schedule_dict[lr_schedule]
         scheduler = torch.optim.lr_scheduler.LambdaLR(opt.opt, schedule_func)
-        
+
         loss_builder = LossBuilder(ref_im, loss_str, eps).cuda()
 
         min_loss = np.inf
         best_summary = ""
         start_t = time.time()
+        gen_im = None
+
 
         if self.verbose: print("Optimizing")
         for j in range(steps):
@@ -166,4 +168,5 @@ class PULSE(torch.nn.Module):
         current_info = f' | time: {total_t:.1f} | it/s: {(j+1)/total_t:.2f} | batchsize: {batch_size}'
         if self.verbose: print(best_summary+current_info)
 
-        return best_im.cpu().detach().clamp(0,1)
+        #yield  (best_im.cpu().detach().clamp(0,1))
+        yield (gen_im.clone().cpu().detach().clamp(0, 1),loss_builder.D(best_im).cpu().detach().clamp(0, 1))
